@@ -2,7 +2,7 @@
 
 i am trying to build an application such that when a user tries to upload any file into s3 bucket we should get a notification in turn with details of that file name and timestamp and other important details.
 
-once i finish the above then i will try to intigrate textract such that when ever user uploads he will get notification and also extracted text.
+once i finish the above then i will try to integrate textract such that when ever user uploads he will get notification and also extracted text.
 
 and i will plan to integrate the mongoDB with this project after completing the above two requirements and will store the user name and file name in mongoDB.
 
