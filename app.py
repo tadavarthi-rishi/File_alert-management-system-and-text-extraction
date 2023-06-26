@@ -12,6 +12,7 @@ app = Flask(__name__)
 AWS_ACCESS_KEY = 'enter your aws access key'
 AWS_SECRET_KEY = 'enter you secret key'
 S3_BUCKET = 'enter your desired bucket name or already created bucket name'
+SNS_TOPIC_ARN = 'create an sns topic and copy paste the ARN here'
 
 
 #connecting to s3 programatically through boto3 
