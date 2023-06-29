@@ -13,6 +13,8 @@ AWS_ACCESS_KEY = 'enter your aws access key'
 AWS_SECRET_KEY = 'enter you secret key'
 S3_BUCKET = 'enter your desired bucket name or already created bucket name'
 SNS_TOPIC_ARN = 'create an sns topic and copy paste the ARN here'
+textract = boto3.client('textract', aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY, region_name='us-east-1')
+
 
 
 #connecting to s3 programatically through boto3 
@@ -21,6 +23,27 @@ s3 = boto3.client('s3',aws_access_key_id = AWS_ACCESS_KEY,
 aws_secret_access_key = AWS_SECRET_KEY,region_name = 'us-east-1')
 
 
+
+def get_job_results(job_id):
+    response = textract.get_document_text_detection(JobId=job_id)
+    status = response['JobStatus']
+
+    while status == 'IN_PROGRESS':
+        time.sleep(5)
+        response = textract.get_document_text_detection(JobId=job_id)
+        status = response['JobStatus']
+
+    if status == 'SUCCEEDED':
+        blocks = response['Blocks']
+        extracted_text = ''
+
+        for block in blocks:
+            if block['BlockType'] == 'LINE':
+                extracted_text += block['Text'] + '\n'
+
+        return extracted_text
+
+    return None
 
 @app.route('/upload',methods = ['POST'])
 def upload_fie():
@@ -40,6 +63,30 @@ def upload_fie():
 
         # Upload the file to S3 bucket
         s3.upload_fileobj(file, S3_BUCKET, file.filename)
+
+        # Call Textract to extract text from the document
+        response = textract.start_document_text_detection(
+            DocumentLocation={'S3Object': {'Bucket': S3_BUCKET, 'Name': file.filename}}
+        )
+
+        # Get the job ID for retrieving the extracted text
+        job_id = response['JobId']
+
+        # Wait for the Textract job to complete and retrieve the extracted text
+        extracted_text = get_job_results(job_id)
+
+        if extracted_text:
+            # Store the user's name, mobile number, and file name, extracted text in MongoDB
+            timestamp = time.time()
+            timestamp_format = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+            document = {'name': name, 'cell': cell, 'file_name': file.filename,'timestamp': timestamp_format,'extractedtext':extracted_text}
+            collection.insert_one(document)
+
+            return f'File uploaded successfully. Object URL: {object_url}\nExtracted Text:\n{extracted_text}'
+        else:
+            return f'File uploaded successfully. Object URL: {object_url}\nFailed to extract text.'
+
+    return 'Invalid request. Please provide a file, name, and cell number.'
 
     return f'File uploaded successfully'
 
