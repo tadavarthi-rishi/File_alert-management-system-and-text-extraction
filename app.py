@@ -1,6 +1,7 @@
 from flask import Flask, request
 import boto3
 import json
+from pymongo import MongoClient
 
 
 
@@ -42,6 +43,41 @@ def get_job_results(job_id):
                 extracted_text += block['Text'] + '\n'
 
         return extracted_text
+
+    return None
+
+
+def get_sqs_message():
+    response = sqs.receive_message(
+        QueueUrl=QUEUE_URL,
+        AttributeNames=['All'],
+        MessageAttributeNames=['All'],
+        MaxNumberOfMessages=1,
+        WaitTimeSeconds=0
+    )
+
+    messages = response.get('Messages', [])
+    if messages:
+        message = messages[0]
+        receipt_handle = message['ReceiptHandle']
+
+        # Delete the message from the queue
+        sqs.delete_message(
+            QueueUrl=QUEUE_URL,
+            ReceiptHandle=receipt_handle
+        )
+
+        # Extract the message body
+        message_body = message['Body']
+
+        # Parse the message body as JSON
+        sqs_message = json.loads(message_body)
+
+        # Extract the relevant information from the SQS message
+        file_name = sqs_message['Records'][0]['s3']['object']['key']
+        print(file_name)
+
+        return message_body
 
     return None
 
@@ -89,6 +125,14 @@ def upload_fie():
     return 'Invalid request. Please provide a file, name, and cell number.'
 
     return f'File uploaded successfully'
+
+
+@app.route('/messages', methods=['GET'])
+def get_messages():
+    message = get_sqs_message()
+    if message:
+        return f'SQS Message: {message}'
+    return 'No messages in SQS'
 
 
 if __name__ == '__main__':
