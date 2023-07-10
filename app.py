@@ -135,5 +135,23 @@ def get_messages():
     return 'No messages in SQS'
 
 
+@app.route('/retrieve',methods=['GET'])
+def get_details():
+    name = request.args.get('name')
+    if name:
+        documents = collection.find({'name':name})
+        response = []
+        for document in documents:
+            response.append({
+            'name':document['name'],
+            'cell':document['cell'],
+            'file_name':document['file_name'],
+            'time_stamp':document['timestamp'],
+            'extracted_text':document['extractedtext']
+            })
+        return json.dumps(response)
+    return 'Invalid request. please provide a valid input name'
+    
+
 if __name__ == '__main__':
     app.run(debug=True)
