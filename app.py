@@ -153,5 +153,22 @@ def get_details():
     return 'Invalid request. please provide a valid input name'
     
 
+@app.route('/extracted_text',methods=['GET'])
+def get_extracted_text():
+    name = request.args.get('name')
+    file_name = request.args.get('file')
+
+    if name and file_name:
+        document = collection.find_one({'name':name,'file_name':file_name})
+
+        if document:
+            extracted_text = document.get('extractedtext')
+            return f'Extracted Text for {file_name}:\n{extracted_text}'
+
+        return f'No extracted text available for {file_name}'
+
+    return 'Invalid request. Please provide valid name and file parameters.'
+
+
 if __name__ == '__main__':
     app.run(debug=True)
