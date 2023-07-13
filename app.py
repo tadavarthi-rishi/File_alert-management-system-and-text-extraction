@@ -170,5 +170,30 @@ def get_extracted_text():
     return 'Invalid request. Please provide valid name and file parameters.'
 
 
+@app.route('/download', methods=['GET'])
+def download_file():
+    name = request.args.get('file_name')
+    if name:
+        document = collection.find_one({'file_name': name})
+        if document:
+            file_name = document['file_name']
+            # Get the file from S3 bucket
+            file = s3.get_object(Bucket=S3_BUCKET, Key=file_name)
+            # Extract the file content
+            file_content = file['Body'].read()
+
+            # Set the appropriate headers for binary download
+            headers = {
+                'Content-Type': 'application/octet-stream',
+                'Content-Disposition': f'attachment; filename={file_name}'
+            }
+
+            # Return the file as a binary response
+            return Response(BytesIO(file_content), headers=headers)
+
+        return 'No file found for the given name'
+
+    return 'Invalid request. Please provide a valid name parameter.'
+
 if __name__ == '__main__':
     app.run(debug=True)
