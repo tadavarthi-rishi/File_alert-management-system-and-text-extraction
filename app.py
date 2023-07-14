@@ -2,7 +2,8 @@ from flask import Flask, request
 import boto3
 import json
 from pymongo import MongoClient
-
+from datetime import datetime
+from flask import send_file
 
 
 app = Flask(__name__)
@@ -23,6 +24,22 @@ textract = boto3.client('textract', aws_access_key_id=AWS_ACCESS_KEY, aws_secret
 s3 = boto3.client('s3',aws_access_key_id = AWS_ACCESS_KEY,
 aws_secret_access_key = AWS_SECRET_KEY,region_name = 'us-east-1')
 
+# Authenticate user
+def authenticate(username, password):
+    user = user_collection.find_one({'username': username})
+    if user and user['password'] == password:
+        return True
+    return False
+
+# Decorator for authentication
+def requires_auth(func):
+    @wraps(func)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not authenticate(auth.username, auth.password):
+            return Response('Could not verify your credentials. Please provide valid username and password.', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
+        return func(*args, **kwargs)
+    return decorated
 
 
 def get_job_results(job_id):
