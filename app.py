@@ -212,5 +212,32 @@ def download_file():
 
     return 'Invalid request. Please provide a valid name parameter.'
 
+
+@app.route('/delete', methods=['DELETE'])
+@requires_auth
+def delete_file():
+    file_name = request.args.get('file_name')
+    name = request.args.get('name')
+    username = request.authorization.username
+    password = request.authorization.password
+
+    if file_name:
+        # Check if the file exists in the S3 bucket
+        response = s3.list_objects_v2(Bucket=S3_BUCKET, Prefix=file_name)
+        if 'Contents' not in response:
+            return jsonify({'message': 'File does not exist.'}), 404
+
+        # Authenticate the user
+        if not authenticate(username, password):
+            return jsonify({'message': 'Invalid username or password.'}), 401
+
+        # Delete the file from the S3 bucket
+        s3.delete_object(Bucket=S3_BUCKET, Key=file_name)
+
+        # Delete the file document from MongoDB
+        collection.delete_one({'name': name, 'file_name': file_name})
+
+        return jsonify({'message': 'File deleted successfully.'}), 200
+
 if __name__ == '__main__':
     app.run(debug=True)
