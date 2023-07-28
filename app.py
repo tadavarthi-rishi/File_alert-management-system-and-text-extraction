@@ -24,7 +24,9 @@ S3_BUCKET = 'enter your desired bucket name or already created bucket name'
 SNS_TOPIC_ARN = 'create an sns topic and copy paste the ARN here'
 textract = boto3.client('textract', aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY, region_name='us-east-1')
 
-
+client = MongoClient(MONGODB_CONNECTION_STRING)
+db = client[MONGODB_DATABASE_NAME]
+collection = db[MONGODB_COLLECTION_NAME]
 
 #connecting to s3 programatically through boto3 
 
